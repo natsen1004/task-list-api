@@ -1,6 +1,7 @@
 from flask import Blueprint, abort, make_response, request, Response
 from ..db import db
 from app.models.task import Task
+from datetime import datetime
 
 tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
@@ -66,6 +67,29 @@ def update_task(task_id):
     }
 
     return response, 200
+
+@tasks_bp.patch("/<task_id>/mark_complete")
+def complete_task(task_id):
+    task = validate_task(task_id)
+    task.completed_at = datetime.utcnow()  
+    db.session.commit()
+
+    response = {
+        "task": task.to_dict()
+    }
+    return response, 200
+
+@tasks_bp.patch("/<task_id>/mark_incomplete")
+def mark_task_incomplete(task_id):
+    task = validate_task(task_id)
+    task.completed_at = None  
+    db.session.commit()
+
+    response = {
+        "task": task.to_dict()
+    }
+    return response, 200
+
 
 @tasks_bp.delete("/<task_id>")
 def delete_task(task_id):
