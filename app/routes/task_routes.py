@@ -9,9 +9,9 @@ from .route_utilities import validate_model
 
 load_dotenv()
 
-tasks_bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
+bp = Blueprint("tasks_bp", __name__, url_prefix="/tasks")
 
-@tasks_bp.post("")
+@bp.post("")
 def create_task():
     request_body = request.get_json()
     if "title" not in request_body or "description" not in request_body:
@@ -28,7 +28,7 @@ def create_task():
     }
     return response, 201
 
-@tasks_bp.get("")
+@bp.get("")
 def get_all_tasks():
     sort_order = request.args.get('sort')
 
@@ -45,7 +45,7 @@ def get_all_tasks():
     return tasks_response, 200
 
 
-@tasks_bp.get("/<task_id>")
+@bp.get("/<task_id>")
 def get_one_task(task_id):
     task = validate_model(Task, task_id)
     if not task:
@@ -56,7 +56,7 @@ def get_one_task(task_id):
 
     return task_response, 200
 
-@tasks_bp.put("/<task_id>")
+@bp.put("/<task_id>")
 def update_task(task_id):
     task = validate_model(Task, task_id)
     if not task:
@@ -75,7 +75,7 @@ def update_task(task_id):
 
     return response, 200
 
-@tasks_bp.patch("/<task_id>/mark_complete")
+@bp.patch("/<task_id>/mark_complete")
 def complete_task(task_id):
     task = validate_model(Task, task_id)
 
@@ -100,7 +100,7 @@ def complete_task(task_id):
         return {"error": "Failed to send Slack notification"}, 500
     
 
-@tasks_bp.patch("/<task_id>/mark_incomplete")
+@bp.patch("/<task_id>/mark_incomplete")
 def mark_task_incomplete(task_id):
     task = validate_model(Task, task_id)
 
@@ -110,7 +110,7 @@ def mark_task_incomplete(task_id):
     return {"task": task.to_dict()}, 200
 
 
-@tasks_bp.delete("/<task_id>")
+@bp.delete("/<task_id>")
 def delete_task(task_id):
     task = validate_model(Task, task_id)
     if not task:
