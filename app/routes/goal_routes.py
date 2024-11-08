@@ -99,13 +99,12 @@ def get_task_by_id(task_id):
         response = {"message": f"task id {task_id} not found"}
         abort(make_response(response, 404))
     
-    # Prepare the response data
     task_data = {
         "id": task.id,
-        "goal_id": task.goal_id,  # Include goal_id in the response
+        "goal_id": task.goal_id,  
         "title": task.title,
         "description": task.description,
-        "is_complete": task.completed_at is not None  # is_complete based on whether completed_at is set
+        "is_complete": task.completed_at is not None 
     }
     
     return {"task": task_data}, 200
