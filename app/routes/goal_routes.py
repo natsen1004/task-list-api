@@ -1,8 +1,8 @@
 from flask import Blueprint, request, abort, make_response
 from app.models.goal import Goal
 from ..db import db
-from .route_utilities import validate_model, get_model_with_filters
-from app.models.task import Task
+from .route_utilities import validate_model, get_model_with_filters, create_model
+
 
 
 bp = Blueprint("goals_bp", __name__, url_prefix="/goals")
@@ -21,6 +21,96 @@ def create_goal():
         "goal": new_goal.to_dict()  
     }
     return response, 201
+
+@bp.post("/<goal_id>/tasks")
+def create_task_with_goal_id(goal_id):
+    from app.models.goal import Goal
+    from app.models.task import Task
+
+    goal = validate_model(Goal, goal_id)
+    if not goal:
+        response = {"message": f"Goal with ID {goal_id} not found"}
+        abort(make_response(response, 404))
+
+    request_body = request.get_json()
+    task_ids = request_body.get("task_ids")
+    
+    if not task_ids:
+        response = {"message": "Invalid request: missing 'task_ids'"}
+        abort(make_response(response, 400))
+
+    tasks = Task.query.filter(Task.id.in_(task_ids)).all()
+
+    if len(tasks) != len(task_ids):
+        response = {"message": "One or more tasks not found"}
+        abort(make_response(response, 404))
+
+    for task in tasks:
+        if task not in goal.tasks:
+            goal.tasks.append(task)
+
+    db.session.commit()
+
+    goal_data = {
+        "id": goal.id,
+        "task_ids": [task.id for task in goal.tasks]
+    }
+
+    response = goal_data  
+    return response, 200
+
+
+@bp.get("/<goal_id>/tasks")
+def get_tasks_for_goal(goal_id):
+    from app.models.goal import Goal
+    from app.models.task import Task
+    goal = validate_model(Goal, goal_id)
+
+
+    if goal.tasks:  
+        task_data = [task.to_dict() for task in goal.tasks]
+    else: 
+        tasks = Task.query.filter_by(goal_id=goal.id).all()
+        task_data = [
+            task.to_dict() for task in tasks
+        ]
+
+    task_data = task_data or []
+
+    for task in task_data:
+        task["is_complete"] = bool(task.get("is_complete", False))  # Explicitly cast to bool
+
+    response = {
+        "id": goal.id,
+        "title": goal.title,
+        "tasks": task_data 
+    }
+
+    return response, 200
+
+@bp.get("/tasks/<task_id>")
+def get_task_by_id(task_id):
+    from app.models.task import Task
+    from app.models.goal import Goal
+    
+    # Validate that the task exists
+    task = Task.query.get(task_id)
+    if not task:
+        response = {"message": f"task id {task_id} not found"}
+        abort(make_response(response, 404))
+    
+    # Prepare the response data
+    task_data = {
+        "id": task.id,
+        "goal_id": task.goal_id,  # Include goal_id in the response
+        "title": task.title,
+        "description": task.description,
+        "is_complete": task.completed_at is not None  # is_complete based on whether completed_at is set
+    }
+    
+    return {"task": task_data}, 200
+
+
 
 @bp.get("")
 def get_all_goal():

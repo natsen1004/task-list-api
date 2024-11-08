@@ -6,12 +6,12 @@ def validate_model(cls, model_id):
     
     try:
         model_id = int(model_id)
-    except:
+    except ValueError:
         abort(make_response({"message": f"{model_prefix}_id {model_id} invalid"}, 400))
     
-    query = db.select(cls).where(cls.id == model_id)
-    model = db.session.scalar(query)
-
+    # query = db.select(cls).where(cls.id == model_id)
+    # model = db.session.scalar(query)
+    model = cls.query.get(model_id)
     if not model:
         abort(make_response({"message": f"{model_prefix}_id {model_id} not found"}, 404))
 
@@ -30,8 +30,10 @@ def get_model_with_filters(cls, filters=None):
 
     if filters:
         for attribute, value in filters.items():
-            if hasattr(cls, attribute):
-                query = query.where(getattr(cls, attribute).ilike(f"%{value}%"))
+            if isinstance(value, list):
+                    query = query.where(getattr(cls, attribute).in_(value))
+            else:
+                    query = query.where(getattr(cls, attribute).ilike(f"%{value}%") if isinstance(value, str) else getattr(cls, attribute) == value)
     models = db.session.scalars(query.order_by(cls.id))
     models_response = [model.to_dict() for model in models]
 

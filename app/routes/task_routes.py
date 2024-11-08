@@ -18,16 +18,16 @@ def create_task():
         abort(make_response({"details": "Invalid data"}, 400))
 
     completed_at = request_body.get("completed_at", None)
-        
+            
     new_task = Task.from_dict(request_body)
     db.session.add(new_task)
     db.session.commit()
 
     response = {
-        "task": new_task.to_dict()  
+        "task": new_task.to_dict()
     }
     return response, 201
-
+    
 @bp.get("")
 def get_all_tasks():
     sort_order = request.args.get('sort')
@@ -44,12 +44,9 @@ def get_all_tasks():
     tasks_response = [task.to_dict() for task in tasks]
     return tasks_response, 200
 
-
 @bp.get("/<task_id>")
 def get_one_task(task_id):
     task = validate_model(Task, task_id)
-    if not task:
-        abort(make_response({"message": f"task_id {task_id} not found"}, 404))
     task_response = {
         "task": task.to_dict()  
     }
